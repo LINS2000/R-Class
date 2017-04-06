@@ -34,7 +34,7 @@ symbolid <- 'TXF'; qryyear <- '2017'; qrymonth <- '03';qryday <- '22'
 
 
 # 判斷當日屬於哪一近月結算月
-settleMonth <- timeNthNdayInMonth(paste(curDateStr[1], curDateStr[2],'01', sep ='-'), 3, 3)
+settleMonth <- timeNthNdayInMonth(paste(curDateStr[1], curDateStr[2],'01', sep ='-'), 3, 2)
 if(Sys.Date() > as.Date(settleMonth["Data"])){
   print("leap")
   curDateStr <- unlist(strsplit(as.character(Sys.Date()+30), '-'))

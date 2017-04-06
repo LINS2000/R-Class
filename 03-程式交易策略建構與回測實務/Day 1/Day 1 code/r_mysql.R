@@ -15,14 +15,14 @@ install.packages("dplyr")
 
 
 library(RMySQL)
-con = dbConnect(MySQL(),user="admin", password="admin",
+con = dbConnect(MySQL(),user="root", password="610322",
                 dbname="world", host="localhost")
 query <- "SELECT Name, CountryCode, District, Population
 FROM world.city
 WHERE CountryCode= 'TWN' AND Population > 500000;"
 myData<-dbGetQuery(con, query)
 View(myData)
-
+class(myData)
 
 # 
 # 透過dplyr 連線 MySQL 資料庫

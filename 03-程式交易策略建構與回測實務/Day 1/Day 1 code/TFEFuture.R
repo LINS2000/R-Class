@@ -14,7 +14,7 @@
 #
 # Julian Lin 
 
-symbolid <- 'TXF'; qyryear <- '2017'; qrymonth <- '03';qrydate <- '20'
+symbolid <- 'TXF'; qyryear <- '2017'; qrymonth <- '04';qrydate <- '06'
 
 # 組成動態查詢字串
 tfeurl <- sprintf("https://www.taifex.com.tw/DailyDownload/DailyDownloadCSV/Daily_%s_%s_%s.zip", 
@@ -34,12 +34,15 @@ tx <- read.csv(unz(temp, tmpf), header = FALSE, skip = 1, sep = ",")
 
 unlink(temp)
 
+head(tx)
+class(tx)
+
 # 清整資料
 # Trim spaces 
 tx$V2 =trimws(tx$V2)
 tx$V3 =trimws(tx$V3)
 
-tx <- tx[(tx$V3 == "201703" & tx$V2 == "TX"),]
+tx <- tx[(tx$V3 == "201704" & tx$V2 == "TX"),]
 
 tx <- subset(tx, select = c("V1", "V4", "V5", "V6"))
 
