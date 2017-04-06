@@ -1,0 +1,21 @@
+安裝:
+
+install.packages("devtools")
+require(devtools)
+
+
+install.packages("FinancialInstrument", repos="http://R-Forge.R-project.org")
+install.packages("blotter", repos="http://R-Forge.R-project.org")
+install.packages("quantstrat", repos="http://R-Forge.R-project.org")
+
+install.packages("PortfolioAnalytics")
+
+install.packages("parallel")
+
+
+
+git_hub程式碼:
+
+source_https("https://raw.githubusercontent.com/R-Finance/quantstrat/master/demo/bbands.R")
+
+
