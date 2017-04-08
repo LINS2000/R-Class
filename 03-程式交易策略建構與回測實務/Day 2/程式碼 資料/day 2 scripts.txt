@@ -5,8 +5,8 @@ require(devtools)
 
 
 install.packages("FinancialInstrument", repos="http://R-Forge.R-project.org")
-install.packages("blotter", repos="http://R-Forge.R-project.org")
-install.packages("quantstrat", repos="http://R-Forge.R-project.org")
+install.packages("blotter", repos="http://R-Forge.R-project.org", type="source")
+install.packages("quantstrat", repos="http://R-Forge.R-project.org", type="source")
 
 install.packages("PortfolioAnalytics")
 

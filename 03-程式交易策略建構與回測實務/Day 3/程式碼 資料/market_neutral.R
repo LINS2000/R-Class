@@ -1,7 +1,8 @@
 library(PortfolioAnalytics)
 require(doParallel)
 
-
+stocks <- colnames(equity.data)
+  
 cl <- makeCluster(4)
 registerDoParallel(cl)
 
