@@ -1,0 +1,431 @@
+library(fPortfolio)
+iClick.backTesting <- function(dat,riskType="MV",Lambda="1m") {
+library(fPortfolio)
+    stopifnot(class(dat) == "timeSeries")
+
+assetReturns=dat
+newData = cbind(rowMeans(assetReturns),assetReturns);
+colnames(newData)=c("Rp",colnames(assetReturns))
+head(newData)
+myFormula = as.formula(paste(names(newData)[1], paste(names(newData)[-1], collapse= "+"),sep="~"))
+COV=c("covEstimator","covLedoit","ShrinkCC","covStudent","GoldSach","kendallEstimator")
+
+OUT.tangency=OUT.GMVP=NULL
+if (riskType=="MV") {
+mySpec1 = portfolioSpec()
+setType(mySpec1)=riskType
+setSolver(mySpec1)= "solveRquadprog"
+  for (i in 1:length(COV)){
+setEstimator(mySpec1)=COV[i]
+myBacktest = portfolioBacktest()
+setStrategyFun(myBacktest)="tangencyStrategy"
+myPort = portfolioBacktesting(myFormula,data = newData, spec = mySpec1,backtest = myBacktest, trace = FALSE, constraints = "LongOnly")
+setSmootherLambda(myBacktest) = Lambda
+mySmoothPort.tmp = portfolioSmoothing(object=myPort,trace = FALSE)
+OUT.tangency[[i]]=mySmoothPort.tmp
+}
+
+mySpec2 = portfolioSpec()
+setType(mySpec2)=riskType 
+for (i in 1:length(COV)){ 	
+setEstimator(mySpec2)=COV[i]
+myBacktest = portfolioBacktest()
+setStrategyFun(myBacktest)="GMVPStrategy"
+myPort = portfolioBacktesting(myFormula,data = newData, spec = mySpec2,backtest = myBacktest, trace = FALSE, constraints = "LongOnly")
+setSmootherLambda(myBacktest) = Lambda
+mySmoothPort.tmp = portfolioSmoothing(object=myPort, trace = FALSE)
+OUT.GMVP[[i]]=mySmoothPort.tmp
+}
+
+} else if (riskType=="CVaR") {
+mySpec3 = portfolioSpec()
+setType(mySpec3)=riskType 
+setSolver(mySpec3)= "solveRglpk.CVAR"
+for (i in 1:length(COV)){	
+setEstimator(mySpec3)=COV[i]
+myBacktest = portfolioBacktest()
+setStrategyFun(myBacktest)="tangencyStrategy"  
+myPort = portfolioBacktesting(myFormula,data = newData, spec = mySpec3,backtest = myBacktest, trace = FALSE, constraints = "LongOnly")
+setSmootherLambda(myBacktest) = Lambda
+mySmoothPort.tmp = portfolioSmoothing(object=myPort,trace = FALSE)
+OUT.tangency[[i]]=mySmoothPort.tmp
+}
+
+mySpec4 = portfolioSpec()
+setType(mySpec4)= riskType
+setSolver(mySpec4)= "solveRglpk.CVAR"
+for (i in 1:length(COV)){		
+setEstimator(mySpec4)=COV[i]
+myBacktest = portfolioBacktest()
+setStrategyFun(myBacktest)="GMVPStrategy"
+myPort = portfolioBacktesting(myFormula,data = newData, spec = mySpec4, backtest = myBacktest, trace = FALSE, constraints = "LongOnly")
+setSmootherLambda(myBacktest) = Lambda
+mySmoothPort.tmp = portfolioSmoothing(object=myPort,trace = FALSE)
+OUT.GMVP[[i]]=mySmoothPort.tmp
+}
+}
+
+savedfile1=paste(".",riskType,"_Tangency.RData",sep="")
+savedfile2=paste(".",riskType,"_GMVP.RData",sep="") 
+
+NAMES=c(
+paste("1.  ", paste(riskType," + Tangency", sep=""),sep=""),
+paste(2:(length(COV)+1),COV,sep=".  "), 
+paste("8.  Save ", savedfile1, sep=""), 
+paste("9.  ", riskType," + GMVP", sep=""),
+paste(10:(length(COV)+9),COV,sep=". "),
+paste("16. Save ", savedfile2, sep=""))
+
+Sys.setlocale(category = "LC_ALL", locale = "English_United States.1252")
+
+    dataRefreshCode <- function(...)  {
+    type = as.integer(.iClickBackTesting(obj.name = "plotType"))
+
+
+        ## 1. Show results
+        if (type == 1) { 
+        print(paste(riskType," + Tangency", sep=""))
+          }
+
+        ## 2.   
+        if (type == 2) { backtestPlot(OUT.tangency[[1]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[1]]);smoothOutput = OUT.tangency[[1]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)}
+
+        ## 3.  
+        if (type == 3) { backtestPlot(OUT.tangency[[2]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[2]]);smoothOutput = OUT.tangency[[2]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+}
+
+        ## 4. 
+        if (type == 4) {
+backtestPlot(OUT.tangency[[3]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[3]]);smoothOutput = OUT.tangency[[3]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+}
+
+         ## 5. 
+        if (type == 5) {backtestPlot(OUT.tangency[[4]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[4]]);smoothOutput = OUT.tangency[[4]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)                
+         }
+
+        # 6  
+        if (type == 6) {
+        backtestPlot(OUT.tangency[[5]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[5]]);smoothOutput = OUT.tangency[[5]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+          }
+
+        ##  7
+        if (type == 7) { backtestPlot(OUT.tangency[[6]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.tangency[[6]]);smoothOutput = OUT.tangency[[6]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+          }
+
+        ## 8  save results
+        if (type == 8) { 
+
+        save(OUT.tangency,file=savedfile1)}
+
+         ## 9. Show results
+        if (type == 9) { 
+        print(paste(riskType," + GMVP", sep=""))
+          }
+
+        ## 10.   
+        if (type == 10) { backtestPlot(OUT.GMVP[[1]], cex = 0.6, font = 1, family = "mono", which="all");print(netPerformance(OUT.GMVP[[1]]));smoothOutput = OUT.GMVP[[1]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)         
+        }
+
+        ## 11.  
+        if (type == 11) { backtestPlot(OUT.GMVP[[2]], cex = 0.6, font = 1, family = "mono", which="all")
+netPerformance(OUT.GMVP[[2]]);smoothOutput = OUT.GMVP[[2]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)  
+        }
+
+        ## 12. 
+        if (type == 12) {
+backtestPlot(OUT.GMVP[[3]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.GMVP[[3]]);smoothOutput = OUT.GMVP[[3]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+}
+
+         ## 13. 
+        if (type == 13) {backtestPlot(OUT.GMVP[[4]], cex = 0.6, font = 1, family = "mono", which="all");print(netPerformance(OUT.GMVP[[4]]));     smoothOutput = OUT.GMVP[[4]];END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)                
+         }
+
+        # 14  
+        if (type == 14) {
+        backtestPlot(OUT.GMVP[[5]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.GMVP[[5]]); smoothOutput = OUT.GMVP[[5]]
+END=time(tail(smoothOutput$portfolio,2));weightsDecision=smoothOutput$smoothWeights[as.character(END),];smoothWeights = round(100*smoothOutput$smoothWeights,2);dateID=rownames(smoothWeights);pickDate=dateID[length(dateID)];advice0=t(smoothWeights[pickDate,]);ADVICE=data.frame(advice0[,advice0 !=0]);colnames(ADVICE)=as.character(pickDate);print(ADVICE)
+          }
+
+        ##  15
+        if (type == 15) { backtestPlot(OUT.GMVP[[6]], cex = 0.6, font = 1, family = "mono", which="all");netPerformance(OUT.GMVP[[6]])
+        smoothOutput = OUT.GMVP[[6]]
+END=time(tail(smoothOutput$portfolio,2))
+weightsDecision=smoothOutput$smoothWeights[as.character(END),]  
+smoothWeights = round(100*smoothOutput$smoothWeights,2)
+dateID=rownames(smoothWeights)
+pickDate=dateID[length(dateID)]
+advice0=t(smoothWeights[pickDate,])
+ADVICE=data.frame(advice0[,advice0 !=0])
+colnames(ADVICE)=as.character(pickDate)
+print(ADVICE)
+        
+          }
+
+        ## 16  save results
+        if (type == 16) {
+
+        save(OUT.GMVP,file=savedfile2)}
+                
+
+}  #End of dataRefreshCode()
+
+    nAssets = dim(dat)[2]
+
+    .iClickBackTesting(
+        dataRefreshCode,
+        names       = c("Selected Asset"),
+        minima      = c(      0),
+        maxima      = c(      nAssets),
+        resolutions = c(      1),
+        starts      = c(      0),
+
+        button.functions = list(
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "1")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "2")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "3")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "4")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "5")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "6")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "7")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "8")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "9")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "10")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "11")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "12")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "13")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "14")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "15")
+                dataRefreshCode()},
+        function(...){
+                .iClickBackTesting(obj.name = "plotType", obj.value = "16")
+                dataRefreshCode()}
+        ),
+
+        button.names = NAMES,
+
+        title = "iClick Portfolio Analysis: back testing"
+        )
+
+  .iClickBackTesting(obj.name = "type", obj.value = "1", no = 1)
+
+   # Return Value()
+   invisible()
+}
+
+
+.iClickBackTesting.env = new.env()
+
+
+.iClickBackTesting <-
+  function(names, minima, maxima, resolutions, starts,button.functions, button.names, no, set.no.value, obj.name, obj.value,reset.function, title)
+  {
+
+    if (!require(tcltk, quietly = TRUE))
+      stop("\n -- Package tcltk not available -- \n\n")
+    
+    if(!exists(".iClickBackTesting.env")) {
+      .iClickBackTesting.env <<- new.env()
+    }
+    if(!missing(obj.name)){
+      if(!missing(obj.value)) {
+        assign(obj.name, obj.value, envir = .iClickBackTesting.env)
+      } else {
+        obj.value <- get(obj.name, envir = .iClickBackTesting.env)
+      }
+      return(obj.value)
+    }
+    if(missing(title)) {
+      title = "Control Widget"
+    }
+    
+    # GUI Settings:
+    myPane <- tktoplevel()
+    tkwm.title(myPane, title)
+    tkwm.geometry(myPane, "+0+0")
+    
+    # Buttons:
+ PADDING= c(3,3,3,10)  
+    framed.buttonA <- ttkframe(myPane,padding=PADDING)
+    tkpack(framed.buttonA,side="left")
+       framed.button1 <- ttkframe(framed.buttonA,padding=PADDING)
+       tkpack(framed.button1)
+       framed.button2 <- ttkframe(framed.buttonA,padding=PADDING)
+       tkpack(framed.button2, fill = "x")
+
+     
+  
+    if (missing(button.names)) {
+      button.names <- NULL
+    }
+
+#loop through button names    
+    for (i in 1:8) {
+      button.fun <-button.functions[[i]]
+      plotButtons<-tkbutton(framed.button1, text = button.names[i], command = button.fun, anchor = "nw",relief="ridge",width = "45")
+      tkconfigure(plotButtons,foreground="blue",font=tkfont.create(size=12
+      ,weight="bold"))
+      tkpack(plotButtons,fill = "x", pady=1)
+
+}
+    for (i in 9:16) {
+      button.fun <-button.functions[[i]]
+      plotButtons<-tkbutton(framed.button2, text = button.names[i], command = button.fun, anchor = "nw",relief="ridge",width = "45")
+      tkconfigure(plotButtons,foreground="blue",font=tkfont.create(size=12
+      ,weight="bold"))
+      tkpack(plotButtons,fill = "x", pady=1)
+}
+
+
+
+
+  #===== Quit Button:
+    quitCMD = function() {
+    tkdestroy(myPane)
+    Sys.setlocale(category = "LC_ALL", locale = "Chinese (Traditional)_Taiwan.950")
+    }
+    
+   quitButton<-tkbutton(framed.buttonA, text = "Quit", command = quitCMD, anchor = "center",relief="ridge",width = "8")
+   tkbind(myPane,"Q",function() tcl(quitButton,"invoke"))
+   tkfocus(quitButton)
+   tkconfigure(quitButton,foreground="indianred2", font=tkfont.create(weight="bold",size=12))
+   tkconfigure(quitButton,underline=0) 
+
+   tkpack(quitButton, side = "right",fill = "x",padx=1)
+
+    
+#assign("iClickBackTesting.values.old", starts, envir = .iClickBackTesting.env)
+    
+    # Return Value:
+    invisible(myPane)
+  }
+
+###==Ledoit and Wolff(2003)====###
+covLedoit <- function (x, spec = NULL)
+ {
+x.mat = as.matrix(x)
+list(mu = colMeans(x.mat), Sigma = SKCov(x.mat)$sigma)
+}
+
+
+###==Ledoit and Wolff(2003) Procedure====###
+SKCov <- function(dat) {
+t=nrow(dat)
+n=ncol(dat)
+
+x=(diag(t)-matrix(1,t,t)/t)%*%dat
+
+xmkt=apply(x,1,mean)
+sMat=data.frame(x, xmkt)
+sample=cov(sMat)*(t-1)/t
+covmkt=sample[1:n,n+1]
+varmkt=sample[n+1,n+1]
+
+sample=sample[,-(n+1)]
+sample=sample[-(n+1),]
+
+prior=covmkt%*%t(covmkt)/varmkt
+diag(prior)=diag(sample)
+
+  c=base::norm(sample-prior,"f")^2
+  y=x^2
+  p=1/t*sum(sum(t(y)%*%y))-sum(sum(sample^2))
+
+  # r is divided into diagonal
+  # and off-diagonal terms, and the off-diagonal term
+  # is itself divided into smaller terms
+  rdiag=1/t*sum(sum(y^2))-sum(diag(sample)^2)
+  z=x*replicate(n,as.numeric(xmkt))
+
+ v1=1/t*(t(y)%*%z)-replicate(n,covmkt)*sample
+
+ roff1=sum(sum(v1*t(replicate(n,covmkt))))/varmkt-sum(diag(v1)*covmkt)/varmkt
+ v3=1/t*t(z)%*%z-varmkt*sample
+  roff3=sum(sum(v3*(covmkt%*%t(covmkt))))/varmkt^2-sum(diag(v3)*covmkt^2)/varmkt^2
+  roff=2*roff1-roff3
+  r=rdiag+roff
+  # compute shrinkage constant
+  k=(p-r)/c
+
+  skg=max(0,min(1,k/t))
+
+# compute the estimator
+sig=skg*prior+(1-skg)*sample
+w=list(sigma=sig,shrinkage=skg,prior=prior)
+return(w)
+}
+
+###===Multivariate Student t=======###
+covStudent <- function (x, spec = NULL)
+ {
+#x.mat = as.matrix(x)
+x.mat =as.matrix(x)
+list(mu = colMeans(x.mat), Sigma = MASS::cov.trob(x.mat)$cov)
+}
+
+
+
+###==========###
+GoldSach <- function(x, spec = NULL)
+{
+x.mat = x
+rho=0.95
+t=nrow(x.mat)
+p=(t-1):0
+w=rho^p
+dat=sqrt(w)*x.mat
+Sig=cov(dat)*t/sum(w)
+#colnames(Sig) <- names(x.mat)
+#rownames(Sig) <- names(x.mat)
+list(mu =colMeans(x.mat) , Sigma =Sig)
+}
+
+###===Constant Correlation===###
+ShrinkCC <- function (x,spec = NULL)
+ {
+#x.mat = as.matrix(x)
+x.mat =x
+t=nrow(x.mat)
+p=(t-1):0
+rho=0.95
+w=rho^p
+list(mu = colMeans(x.mat), Sigma = BurStFin::var.shrink.eqcor(x.mat,weights=1))
+}
+
+GMVPStrategy<-function (data, spec = portfolioSpec(), constraints = "LongOnly", backtest = portfolioBacktest()) 
+{
+    strategyPortfolio <- try(minriskPortfolio(data, spec, constraints))
+    if (class(strategyPortfolio) == "try-error") {
+        strategyPortfolio <- minvariancePortfolio(data, spec, 
+            constraints)
+    }
+    strategyPortfolio
+}
