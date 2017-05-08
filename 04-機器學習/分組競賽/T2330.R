@@ -9,7 +9,7 @@ getwd()
 # prepare training data
 #----------------------------------------------------------------------------------------------
 
-data=read.csv('2330-train.csv', header=T, sep=',')
+data=read.csv('data-train.csv', header=T, sep=',')
 
 closeprice=data$closeprice
 lrow=nrow(data)
@@ -83,7 +83,7 @@ needdata=needdata.tsmc
 # prepare testing data
 #----------------------------------------------------------------------------------------------
 
-data1=read.csv('2330-all.csv', header=T, sep=',')
+data1=read.csv('data-all.csv', header=T, sep=',')
 
 closeprice=data1$closeprice
 
@@ -148,6 +148,21 @@ testdata$class=as.factor(testdata$class)
 # predict testing data
 #----------------------------------------------------------------------------------------------
 
+# compute continuous error of prediction
+calc_continuous_err <- function(predmx, realmx){
+  
+  cerr=0
+  for(j in 2:length(predmx)){
+    
+    if((as.numeric(predmx[j])!=as.numeric(realmx[j])) & (as.numeric(predmx[j-1])!=as.numeric(realmx[j-1]))){
+      
+      cerr=cerr+1
+    }
+  }
+  
+  return(cerr)
+}
+
 # SVM(e1071)
 library(e1071)
 
@@ -171,8 +186,9 @@ for(i in (row.train+1):(row.all-120)){
 
 #
 summary(data.resultsvm)
-t=table(prematrixsvm, realmatrix)
+(t=table(prematrixsvm, realmatrix))
 sum(diag(t)/sum(t))
+calc_continuous_err(prematrixsvm, realmatrix)  #連續出錯次數
 
 
 # Decision Tree(C50)
@@ -202,6 +218,7 @@ for(i in (row.train+1):(row.all-120)){
 
 #
 summary(data.resultc50)
-t=table(prematrixc50, realmatrix)
+(t=table(prematrixc50, realmatrix))
 sum(diag(t)/sum(t))
+calc_continuous_err(prematrixc50, realmatrix)  #連續出錯次數
 
