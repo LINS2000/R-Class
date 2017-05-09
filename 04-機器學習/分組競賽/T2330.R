@@ -9,7 +9,8 @@ getwd()
 # prepare training data
 #----------------------------------------------------------------------------------------------
 
-data=read.csv('data-train.csv', header=T, sep=',')
+data=read.csv('data-all.csv', header=T, sep=',')
+data=data[which(as.Date(data$date)<=as.Date('2014/12/31')),]  #只留2014/12/31前的
 
 closeprice=data$closeprice
 lrow=nrow(data)
